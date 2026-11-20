@@ -23,6 +23,14 @@ Aplicación web interna, 100% local y auto-contenida para procesar y optimizar d
     - **Escala:** ajuste de tamaño de la marca.
     - **Rango de páginas:** aplicar a todas (`all`) o páginas seleccionadas (ej. `1-3, 5`).
   - **Previsualización interactiva:** genera la primera página estampada como stream PDF en tiempo real antes de descargar.
+- **Herramientas Modulares Extras:**
+  - 🔗 **Unir PDFs (Merge):** combina múltiples documentos en un único archivo con reordenado dinámico interactivo (subir/bajar posición).
+  - ✂️ **Dividir PDF (Split):** extrae páginas o rangos específicos (ej. `1-3, 5, 8-10`).
+  - 🔄 **Rotar Páginas (Rotate):** gira todas las páginas o rangos en 90°, 180° o 270°.
+  - 🔒 **Proteger con Contraseña (Protect):** cifra el PDF para exigir contraseña de apertura (la contraseña se procesa en memoria y **NUNCA** se almacena en base de datos ni logs).
+  - 🧹 **Eliminar Metadatos (Strip Metadata):** anonimiza por completo el PDF suprimiendo autor, título, software generador, fechas y metadatos XMP.
+  - 🖼️ **Imágenes a PDF (Img2pdf):** convierte imágenes PNG, JPG o WebP a un PDF unificado.
+  - *Cada módulo se puede activar o desactivar individualmente mediante la variable `ENABLED_MODULES`.*
 - **Procesamiento individual y por lotes:** arrastrar y soltar múltiples archivos con descarga individual o en paquete ZIP unificado.
 - **Privacidad estricta y seguridad:**
   - Los archivos viven temporalmente con nombres `UUID4` y se eliminan inmediatamente tras ser descargados.

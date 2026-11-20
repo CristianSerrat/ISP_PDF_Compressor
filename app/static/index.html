@@ -30,7 +30,7 @@
     <div class="tabs">
       <button class="tab-btn active" id="tabCompress">Comprimir PDF</button>
       <button class="tab-btn" id="tabWatermark">Marca de Agua</button>
-      <button class="tab-btn" id="tabExtras" disabled title="Disponible en Fase 4">Otras Herramientas</button>
+      <button class="tab-btn" id="tabExtras">Otras Herramientas</button>
     </div>
 
     <!-- Módulo de Compresión -->
@@ -243,6 +243,105 @@
 
       <!-- Resultados -->
       <div class="results-card" id="wmResultsContainer" style="display: none;"></div>
+    </section>
+
+    <!-- Módulo de Otras Herramientas -->
+    <section class="card" id="extrasSection" style="display: none;">
+      <p class="section-desc">
+        Herramientas modulares de manipulación directa de PDF procesadas 100% en local.
+      </p>
+
+      <!-- Selector de Sub-Herramienta -->
+      <div class="type-selector" style="flex-wrap: wrap;">
+        <div class="type-btn active" data-extra="merge">🔗 Unir PDFs</div>
+        <div class="type-btn" data-extra="split">✂️ Dividir PDF</div>
+        <div class="type-btn" data-extra="rotate">🔄 Rotar Páginas</div>
+        <div class="type-btn" data-extra="protect">🔒 Proteger PDF</div>
+        <div class="type-btn" data-extra="strip">🧹 Limpiar Metadatos</div>
+        <div class="type-btn" data-extra="img2pdf">🖼️ Imágenes a PDF</div>
+      </div>
+
+      <!-- Zona de carga de archivos para extras -->
+      <div class="dropzone" id="extraDropzone">
+        <svg class="dropzone-icon" viewBox="0 0 24 24">
+          <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+        </svg>
+        <p id="extraDropText">Arrastra aquí tus archivos PDF o haz clic para seleccionarlos</p>
+        <span id="extraDropHint">Soporta selección de múltiples archivos</span>
+        <input type="file" id="extraFileInput" multiple style="display: none;">
+      </div>
+
+      <!-- Lista de archivos seleccionados (con soporte de reordenado para merge) -->
+      <div class="file-list" id="extraFileList"></div>
+
+      <!-- Controles específicos de cada herramienta -->
+      <div id="extraOptions" style="margin-top: 1.5rem;">
+        <!-- Panel Dividir -->
+        <div id="extraPanelSplit" style="display: none;">
+          <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.3rem;">Páginas a extraer:</label>
+          <input type="text" id="splitPagesInput" class="input-text" placeholder="Ej: 1-3, 5, 8-10" value="1">
+          <small style="color: var(--text-muted); font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+            Indica números o rangos separados por comas.
+          </small>
+        </div>
+
+        <!-- Panel Rotar -->
+        <div id="extraPanelRotate" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.3rem;">Ángulo de giro:</label>
+              <select id="rotateAngleSelect" class="input-text">
+                <option value="90">90° en sentido horario</option>
+                <option value="180">180° media vuelta</option>
+                <option value="270">270° (90° antihorario)</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.3rem;">Páginas a rotar:</label>
+              <input type="text" id="rotatePagesInput" class="input-text" value="all" placeholder="'all' o '1-3, 5'">
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Proteger -->
+        <div id="extraPanelProtect" style="display: none;">
+          <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.3rem;">Contraseña de apertura (Cifrado AES-256):</label>
+          <input type="password" id="protectPasswordInput" class="input-text" placeholder="Escribe la contraseña segura">
+        </div>
+
+        <!-- Panel Limpiar Metadatos -->
+        <div id="extraPanelStrip" style="display: none;">
+          <div class="alert alert-warning" style="margin-top: 0;">
+            ℹ️ Se eliminará el autor, título, software generador, fecha de creación y metadatos XMP del documento para garantizar anonimato total.
+          </div>
+        </div>
+
+        <!-- Panel Unir e Imágenes (sin controles extra, usan la lista de archivos) -->
+      </div>
+
+      <!-- Alertas -->
+      <div id="extraAlertContainer"></div>
+
+      <!-- Barra de progreso -->
+      <div class="progress-container" id="extraProgressContainer" style="display: none;">
+        <div class="progress-bar">
+          <div class="progress-fill" id="extraProgressBar"></div>
+        </div>
+        <div class="progress-status" id="extraProgressStatus">Procesando documentos...</div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="actions">
+        <button class="btn btn-primary" id="extraApplyBtn" disabled>
+          ⚡ Ejecutar Acción
+        </button>
+        <button class="btn btn-secondary" id="extraResetBtn">
+          Limpiar
+        </button>
+      </div>
+
+      <!-- Resultados -->
+      <div class="results-card" id="extraResultsContainer" style="display: none;"></div>
     </section>
   </main>
 

@@ -20,22 +20,22 @@ document.addEventListener("DOMContentLoaded", () => {
   // === PESTAÑAS PRINCIPALES ===
   const tabCompress = document.getElementById("tabCompress");
   const tabWatermark = document.getElementById("tabWatermark");
+  const tabExtras = document.getElementById("tabExtras");
+
   const compressSection = document.getElementById("compressSection");
   const watermarkSection = document.getElementById("watermarkSection");
+  const extrasSection = document.getElementById("extrasSection");
 
-  tabCompress.addEventListener("click", () => {
-    tabCompress.classList.add("active");
-    tabWatermark.classList.remove("active");
-    compressSection.style.display = "block";
-    watermarkSection.style.display = "none";
-  });
+  function switchMainTab(activeTab, activeSec) {
+    [tabCompress, tabWatermark, tabExtras].forEach((t) => t.classList.remove("active"));
+    [compressSection, watermarkSection, extrasSection].forEach((s) => (s.style.display = "none"));
+    activeTab.classList.add("active");
+    activeSec.style.display = "block";
+  }
 
-  tabWatermark.addEventListener("click", () => {
-    tabWatermark.classList.add("active");
-    tabCompress.classList.remove("active");
-    watermarkSection.style.display = "block";
-    compressSection.style.display = "none";
-  });
+  tabCompress.addEventListener("click", () => switchMainTab(tabCompress, compressSection));
+  tabWatermark.addEventListener("click", () => switchMainTab(tabWatermark, watermarkSection));
+  tabExtras.addEventListener("click", () => switchMainTab(tabExtras, extrasSection));
 
   // ==========================================
   // 1. MÓDULO DE COMPRESIÓN
@@ -283,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const wmDropzone = document.getElementById("wmDropzone");
   const wmTargetFileInput = document.getElementById("wmTargetFileInput");
   const wmFileList = document.getElementById("wmFileList");
-  const wmTypeButtons = document.querySelectorAll(".type-btn");
+  const wmTypeButtons = document.querySelectorAll(".type-btn[data-wmtype]");
   const wmTextOptions = document.getElementById("wmTextOptions");
   const wmFileOptions = document.getElementById("wmFileOptions");
   const wmFileLabel = document.getElementById("wmFileLabel");
@@ -605,5 +605,335 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       `;
     }
+  }
+
+  // ==========================================
+  // 3. MÓDULO DE OTRAS HERRAMIENTAS (EXTRAS)
+  // ==========================================
+  const extraTypeButtons = document.querySelectorAll(".type-btn[data-extra]");
+  const extraDropzone = document.getElementById("extraDropzone");
+  const extraFileInput = document.getElementById("extraFileInput");
+  const extraDropText = document.getElementById("extraDropText");
+  const extraDropHint = document.getElementById("extraDropHint");
+  const extraFileList = document.getElementById("extraFileList");
+
+  const extraPanelSplit = document.getElementById("extraPanelSplit");
+  const extraPanelRotate = document.getElementById("extraPanelRotate");
+  const extraPanelProtect = document.getElementById("extraPanelProtect");
+  const extraPanelStrip = document.getElementById("extraPanelStrip");
+
+  const splitPagesInput = document.getElementById("splitPagesInput");
+  const rotateAngleSelect = document.getElementById("rotateAngleSelect");
+  const rotatePagesInput = document.getElementById("rotatePagesInput");
+  const protectPasswordInput = document.getElementById("protectPasswordInput");
+
+  const extraAlertContainer = document.getElementById("extraAlertContainer");
+  const extraProgressContainer = document.getElementById("extraProgressContainer");
+  const extraProgressBar = document.getElementById("extraProgressBar");
+  const extraProgressStatus = document.getElementById("extraProgressStatus");
+  const extraApplyBtn = document.getElementById("extraApplyBtn");
+  const extraResetBtn = document.getElementById("extraResetBtn");
+  const extraResultsContainer = document.getElementById("extraResultsContainer");
+
+  let currentExtraTool = "merge";
+  let extraFiles = [];
+
+  const extraToolConfig = {
+    merge: {
+      btnLabel: "🔗 Unir PDFs",
+      dropText: "Arrastra los PDFs a unir (puedes reordenarlos abajo)",
+      accept: ".pdf,application/pdf",
+      multiple: true,
+      minFiles: 2,
+    },
+    split: {
+      btnLabel: "✂️ Dividir PDF",
+      dropText: "Arrastra el PDF que deseas dividir",
+      accept: ".pdf,application/pdf",
+      multiple: false,
+      minFiles: 1,
+    },
+    rotate: {
+      btnLabel: "🔄 Rotar Páginas",
+      dropText: "Arrastra el PDF cuyas páginas deseas rotar",
+      accept: ".pdf,application/pdf",
+      multiple: false,
+      minFiles: 1,
+    },
+    protect: {
+      btnLabel: "🔒 Proteger PDF",
+      dropText: "Arrastra el PDF que deseas cifrar con contraseña",
+      accept: ".pdf,application/pdf",
+      multiple: false,
+      minFiles: 1,
+    },
+    strip: {
+      btnLabel: "🧹 Eliminar Metadatos",
+      dropText: "Arrastra el PDF para limpiar datos de autor y software",
+      accept: ".pdf,application/pdf",
+      multiple: false,
+      minFiles: 1,
+    },
+    img2pdf: {
+      btnLabel: "🖼️ Convertir a PDF",
+      dropText: "Arrastra las imágenes a convertir (PNG, JPG, WebP)",
+      accept: ".png,.jpg,.jpeg,.webp",
+      multiple: true,
+      minFiles: 1,
+    },
+  };
+
+  extraTypeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      extraTypeButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      currentExtraTool = btn.dataset.extra;
+      switchExtraTool(currentExtraTool);
+    });
+  });
+
+  function switchExtraTool(toolKey) {
+    const cfg = extraToolConfig[toolKey] || extraToolConfig.merge;
+    extraApplyBtn.textContent = cfg.btnLabel;
+    extraDropText.textContent = cfg.dropText;
+    extraFileInput.accept = cfg.accept;
+    extraFileInput.multiple = cfg.multiple;
+
+    // Paneles de opciones
+    extraPanelSplit.style.display = toolKey === "split" ? "block" : "none";
+    extraPanelRotate.style.display = toolKey === "rotate" ? "block" : "none";
+    extraPanelProtect.style.display = toolKey === "protect" ? "block" : "none";
+    extraPanelStrip.style.display = toolKey === "strip" ? "block" : "none";
+
+    // Reiniciar archivos
+    extraFiles = [];
+    extraFileInput.value = "";
+    renderExtraFileList();
+    checkExtraReady();
+    extraAlertContainer.innerHTML = "";
+    extraResultsContainer.style.display = "none";
+  }
+
+  function handleExtraFiles(fileList) {
+    extraAlertContainer.innerHTML = "";
+    extraResultsContainer.style.display = "none";
+    const cfg = extraToolConfig[currentExtraTool];
+
+    let valids = Array.from(fileList);
+    if (currentExtraTool === "img2pdf") {
+      valids = valids.filter((f) => /\.(png|jpe?g|webp)$/i.test(f.name) || f.type.startsWith("image/"));
+    } else {
+      valids = valids.filter((f) => f.name.toLowerCase().endsWith(".pdf") || f.type === "application/pdf");
+    }
+
+    if (valids.length === 0) {
+      showExtraAlert("Formato de archivo no compatible con la herramienta seleccionada.", "warning");
+      return;
+    }
+
+    if (!cfg.multiple) {
+      extraFiles = [valids[0]];
+    } else {
+      extraFiles = extraFiles.concat(valids);
+    }
+
+    renderExtraFileList();
+    checkExtraReady();
+  }
+
+  function renderExtraFileList() {
+    extraFileList.innerHTML = "";
+    if (extraFiles.length === 0) return;
+
+    extraFiles.forEach((file, idx) => {
+      const item = document.createElement("div");
+      item.className = "file-item";
+
+      let orderButtons = "";
+      if (currentExtraTool === "merge" && extraFiles.length > 1) {
+        orderButtons = `
+          <div style="display: flex; gap: 0.25rem;">
+            <button class="btn btn-secondary" style="padding: 0.1rem 0.4rem; font-size: 0.75rem;" ${idx === 0 ? "disabled" : ""} onclick="window.moveExtraFile(${idx}, -1)">▲</button>
+            <button class="btn btn-secondary" style="padding: 0.1rem 0.4rem; font-size: 0.75rem;" ${idx === extraFiles.length - 1 ? "disabled" : ""} onclick="window.moveExtraFile(${idx}, 1)">▼</button>
+          </div>
+        `;
+      }
+
+      item.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 0.5rem; max-width: 75%;">
+          <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">#${idx + 1}</span>
+          <span class="file-name">${escapeHtml(file.name)}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span class="file-size">${formatBytes(file.size)}</span>
+          ${orderButtons}
+          <button class="btn btn-secondary" style="padding: 0.1rem 0.4rem; font-size: 0.75rem; color: var(--danger);" onclick="window.removeExtraFile(${idx})">✕</button>
+        </div>
+      `;
+      extraFileList.appendChild(item);
+    });
+  }
+
+  // Métodos expuestos globalmente para botones en línea
+  window.moveExtraFile = (index, delta) => {
+    const target = index + delta;
+    if (target < 0 || target >= extraFiles.length) return;
+    const temp = extraFiles[index];
+    extraFiles[index] = extraFiles[target];
+    extraFiles[target] = temp;
+    renderExtraFileList();
+    checkExtraReady();
+  };
+
+  window.removeExtraFile = (index) => {
+    extraFiles.splice(index, 1);
+    renderExtraFileList();
+    checkExtraReady();
+  };
+
+  function checkExtraReady() {
+    const cfg = extraToolConfig[currentExtraTool];
+    extraApplyBtn.disabled = extraFiles.length < cfg.minFiles;
+  }
+
+  extraDropzone.addEventListener("click", () => extraFileInput.click());
+  extraFileInput.addEventListener("change", (e) => handleExtraFiles(e.target.files));
+
+  ["dragenter", "dragover"].forEach((eventName) => {
+    extraDropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      extraDropzone.classList.add("dragover");
+    });
+  });
+
+  ["dragleave", "drop"].forEach((eventName) => {
+    extraDropzone.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      extraDropzone.classList.remove("dragover");
+    });
+  });
+
+  extraDropzone.addEventListener("drop", (e) => {
+    if (e.dataTransfer && e.dataTransfer.files) {
+      handleExtraFiles(e.dataTransfer.files);
+    }
+  });
+
+  function showExtraAlert(msg, type = "danger") {
+    extraAlertContainer.innerHTML = `<div class="alert alert-${type}">${escapeHtml(msg)}</div>`;
+  }
+
+  extraResetBtn.addEventListener("click", () => {
+    extraFiles = [];
+    extraFileInput.value = "";
+    renderExtraFileList();
+    checkExtraReady();
+    extraProgressContainer.style.display = "none";
+    extraAlertContainer.innerHTML = "";
+    extraResultsContainer.style.display = "none";
+  });
+
+  // Ejecutar Acción Extra
+  extraApplyBtn.addEventListener("click", async () => {
+    const cfg = extraToolConfig[currentExtraTool];
+    if (extraFiles.length < cfg.minFiles) return;
+
+    extraAlertContainer.innerHTML = "";
+    extraResultsContainer.style.display = "none";
+    extraApplyBtn.disabled = true;
+    extraResetBtn.disabled = true;
+    extraProgressContainer.style.display = "block";
+    extraProgressBar.style.width = "40%";
+    extraProgressStatus.textContent = "Procesando documentos en local...";
+
+    const fd = new FormData();
+    let endpoint = "";
+
+    if (currentExtraTool === "merge") {
+      endpoint = "/api/extras/merge";
+      extraFiles.forEach((f) => fd.append("files", f));
+    } else if (currentExtraTool === "split") {
+      endpoint = "/api/extras/split";
+      fd.append("file", extraFiles[0]);
+      fd.append("pages_range", splitPagesInput.value.trim() || "1");
+    } else if (currentExtraTool === "rotate") {
+      endpoint = "/api/extras/rotate";
+      fd.append("file", extraFiles[0]);
+      fd.append("angle", rotateAngleSelect.value);
+      fd.append("pages_range", rotatePagesInput.value.trim() || "all");
+    } else if (currentExtraTool === "protect") {
+      endpoint = "/api/extras/protect";
+      fd.append("file", extraFiles[0]);
+      if (!protectPasswordInput.value) {
+        extraProgressContainer.style.display = "none";
+        showExtraAlert("Debes introducir una contraseña para proteger el archivo.", "warning");
+        extraApplyBtn.disabled = false;
+        extraResetBtn.disabled = false;
+        return;
+      }
+      fd.append("password", protectPasswordInput.value);
+    } else if (currentExtraTool === "strip") {
+      endpoint = "/api/extras/strip-metadata";
+      fd.append("file", extraFiles[0]);
+    } else if (currentExtraTool === "img2pdf") {
+      endpoint = "/api/extras/img2pdf";
+      extraFiles.forEach((f) => fd.append("files", f));
+    }
+
+    try {
+      const resp = await fetch(endpoint, { method: "POST", body: fd });
+      extraProgressBar.style.width = "90%";
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        throw new Error(data.detail || "Error en el procesamiento del archivo.");
+      }
+
+      extraProgressBar.style.width = "100%";
+      extraProgressStatus.textContent = "¡Operación completada con éxito!";
+
+      setTimeout(() => {
+        extraProgressContainer.style.display = "none";
+        renderExtraResults(data);
+      }, 400);
+    } catch (err) {
+      extraProgressContainer.style.display = "none";
+      showExtraAlert(err.message, "danger");
+    } finally {
+      extraApplyBtn.disabled = false;
+      extraResetBtn.disabled = false;
+    }
+  });
+
+  function renderExtraResults(data) {
+    extraResultsContainer.style.display = "block";
+    extraResultsContainer.innerHTML = `
+      <div class="stats-row">
+        <div class="stat-box">
+          <div class="stat-label">Tamaño Original</div>
+          <div class="stat-val">${formatBytes(data.original_size)}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Tamaño Resultante</div>
+          <div class="stat-val">${formatBytes(data.final_size)}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Páginas / Tiempo</div>
+          <div class="stat-val" style="font-size: 1rem;">
+            ${data.pages} págs. · ${(data.duration_ms / 1000).toFixed(1)}s
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="${data.download_url}" class="btn btn-success" download="${escapeHtml(data.filename)}">
+          ⬇️ Descargar ${escapeHtml(data.filename)}
+        </a>
+        <button class="btn btn-secondary" onclick="document.getElementById('extraResetBtn').click()">
+          Realizar otra operación
+        </button>
+      </div>
+    `;
   }
 });
