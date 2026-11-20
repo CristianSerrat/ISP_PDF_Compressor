@@ -12,7 +12,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.config import settings
 from app.core.storage import storage
 from app.database.usage_repo import usage_repo
-from app.routers import admin, compress, download, health
+from app.routers import admin, compress, download, health, watermark
 
 # Configuración básica de logging técnico a stdout
 logging.basicConfig(
@@ -85,6 +85,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 # Rutas de API
 app.include_router(health.router)
 app.include_router(compress.router)
+app.include_router(watermark.router)
 app.include_router(download.router)
 app.include_router(admin.router)
 

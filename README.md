@@ -14,6 +14,15 @@ Aplicación web interna, 100% local y auto-contenida para procesar y optimizar d
     - **Personalizada:** selección manual de DPI (36-600) y factor de calidad JPEG.
   - Comparación de tamaños (original vs. final) y porcentaje de ahorro.
   - **Protección contra inflación:** si el archivo comprimido resulta más pesado que el original, se devuelve el original intacto y se avisa al usuario.
+- **Estampado de Marca de Agua:**
+  - Tres modalidades disponibles: **Texto personalizado**, **Imagen (PNG, JPG, WebP)** o **Archivo PDF**.
+  - Opciones de personalización:
+    - **Posición:** Centro, Esquinas (superior/inferior izq./der.) y patrón en **Mosaico** (repetición en cuadrícula sobre toda la hoja).
+    - **Opacidad:** control de transparencia del 5% al 100%.
+    - **Rotación:** ángulo libre (de -90° a 90°, 45° por defecto).
+    - **Escala:** ajuste de tamaño de la marca.
+    - **Rango de páginas:** aplicar a todas (`all`) o páginas seleccionadas (ej. `1-3, 5`).
+  - **Previsualización interactiva:** genera la primera página estampada como stream PDF en tiempo real antes de descargar.
 - **Procesamiento individual y por lotes:** arrastrar y soltar múltiples archivos con descarga individual o en paquete ZIP unificado.
 - **Privacidad estricta y seguridad:**
   - Los archivos viven temporalmente con nombres `UUID4` y se eliminan inmediatamente tras ser descargados.
