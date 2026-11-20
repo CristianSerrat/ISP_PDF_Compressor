@@ -1,8 +1,18 @@
-// Lógica del Panel de Administración - 100% Vanilla JS, sin dependencias externas
+// Lógica del Panel de Administración con Autenticación por Clave Maestra
 
 document.addEventListener("DOMContentLoaded", () => {
   let currentDays = 30;
 
+  // Elementos de autenticación
+  const loginSection = document.getElementById("loginSection");
+  const dashboardSection = document.getElementById("dashboardSection");
+  const loginForm = document.getElementById("loginForm");
+  const adminPasswordInput = document.getElementById("adminPasswordInput");
+  const loginAlert = document.getElementById("loginAlert");
+  const btnLoginSubmit = document.getElementById("btnLoginSubmit");
+  const btnLogout = document.getElementById("btnLogout");
+
+  // Elementos del dashboard
   const valTotalOps = document.getElementById("valTotalOps");
   const valOkOps = document.getElementById("valOkOps");
   const valErrorRate = document.getElementById("valErrorRate");
@@ -41,20 +51,90 @@ document.addEventListener("DOMContentLoaded", () => {
     return div.innerHTML;
   }
 
+  // Comprobar autenticación cargando estadísticas
   async function loadStats(days) {
     currentDays = days;
     try {
       const response = await fetch(`/admin/api/stats?days=${days}`);
+
+      if (response.status === 401 || response.status === 403) {
+        // No autenticado: mostrar pantalla de login
+        dashboardSection.style.display = "none";
+        btnLogout.style.display = "none";
+        loginSection.style.display = "block";
+        adminPasswordInput.value = "";
+        adminPasswordInput.focus();
+        return;
+      }
+
       if (!response.ok) {
         throw new Error("No se pudieron cargar las estadísticas.");
       }
+
+      // Autenticado: mostrar dashboard
+      loginSection.style.display = "none";
+      dashboardSection.style.display = "block";
+      btnLogout.style.display = "inline-flex";
+
       const data = await response.json();
       renderDashboard(data);
     } catch (err) {
       console.error(err);
-      chartDays.innerHTML = `<div style="margin: auto; color: var(--danger); font-size: 0.85rem;">Error al cargar datos.</div>`;
+      chartDays.innerHTML = `<div style="margin: auto; color: var(--danger); font-size: 0.85rem;">Error al conectar con el servidor.</div>`;
     }
   }
+
+  // Manejo del formulario de login
+  loginForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    loginAlert.innerHTML = "";
+    btnLoginSubmit.disabled = true;
+    btnLoginSubmit.textContent = "Verificando...";
+
+    const formData = new FormData();
+    formData.append("password", adminPasswordInput.value);
+
+    try {
+      const resp = await fetch("/admin/api/login", {
+        method: "POST",
+        body: formData,
+      });
+
+      const resData = await resp.json().catch(() => ({}));
+
+      if (!resp.ok) {
+        throw new Error(resData.detail || "Error de autenticación.");
+      }
+
+      // Login exitoso: cargar estadísticas
+      await loadStats(currentDays);
+    } catch (err) {
+      loginAlert.innerHTML = `
+        <div class="alert alert-danger" style="padding: 0.5rem; font-size: 0.85rem; margin-top: 0.5rem;">
+          ${escapeHtml(err.message)}
+        </div>
+      `;
+      adminPasswordInput.focus();
+    } finally {
+      btnLoginSubmit.disabled = false;
+      btnLoginSubmit.textContent = "🔓 Entrar al Panel";
+    }
+  });
+
+  // Manejo de Logout
+  btnLogout.addEventListener("click", async () => {
+    try {
+      await fetch("/admin/api/logout", { method: "POST" });
+    } catch (err) {
+      console.error(err);
+    }
+    dashboardSection.style.display = "none";
+    btnLogout.style.display = "none";
+    loginSection.style.display = "block";
+    loginAlert.innerHTML = "";
+    adminPasswordInput.value = "";
+    adminPasswordInput.focus();
+  });
 
   function renderDashboard(data) {
     // 1. Tarjetas de métricas
@@ -73,22 +153,12 @@ document.addEventListener("DOMContentLoaded", () => {
     valTotalPages.textContent = (data.total_pages || 0).toLocaleString();
     valAvgDuration.textContent = `${(data.avg_duration_ms / 1000).toFixed(2)}s`;
 
-    // 2. Gráfico por Día
+    // 2. Gráficos
     renderDaysChart(data.by_day || []);
-
-    // 3. Gráfico por Franja Horaria
     renderHourlyChart(data.hourly || []);
-
-    // 4. Operaciones por Tipo
     renderTypesBars(data.by_type || [], data.total_operations);
-
-    // 5. Presets de Calidad
     renderPresetsBars(data.by_preset || [], data.total_operations);
-
-    // 6. Top Clientes
     renderTopClients(data.top_clients || []);
-
-    // 7. Errores Comunes
     renderTopErrors(data.top_errors || []);
   }
 
@@ -98,18 +168,13 @@ document.addEventListener("DOMContentLoaded", () => {
       chartDays.innerHTML = `<div style="margin: auto; color: var(--text-muted); font-size: 0.85rem;">Sin actividad en este período.</div>`;
       return;
     }
-
     const maxCount = Math.max(...daysList.map((d) => d.count), 1);
-
     daysList.forEach((d) => {
       const pct = Math.max((d.count / maxCount) * 100, 3);
       const col = document.createElement("div");
       col.className = "bar-col";
       col.title = `Fecha: ${d.date}\nTotal: ${d.count}\nExitosas: ${d.ok}\nErrores: ${d.errors}`;
-
-      // Mostrar etiqueta corta de día (DD/MM)
       const shortDate = d.date.length >= 10 ? d.date.substring(5) : d.date;
-
       col.innerHTML = `
         <div class="bar-fill" style="height: ${pct}%;"></div>
         <div class="bar-label">${escapeHtml(shortDate)}</div>
@@ -120,12 +185,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderHourlyChart(hourlyList) {
     chartHours.innerHTML = "";
-
-    // Mapear horas de 0 a 23
     const hourMap = {};
     for (let i = 0; i < 24; i++) {
-      const hStr = i.toString().padStart(2, "0");
-      hourMap[hStr] = 0;
+      hourMap[i.toString().padStart(2, "0")] = 0;
     }
     hourlyList.forEach((h) => {
       if (h.hour !== null && h.hour !== undefined) {
@@ -144,10 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const col = document.createElement("div");
       col.className = "bar-col";
       col.title = `${hStr}:00 UTC - ${count} operaciones`;
-
-      // Mostrar etiqueta de hora solo cada 3 horas para legibilidad
       const labelText = i % 3 === 0 ? `${hStr}h` : "";
-
       col.innerHTML = `
         <div class="bar-fill" style="height: ${pct}%; background: ${count > 0 ? "var(--primary)" : "#cbd5e1"};"></div>
         <div class="bar-label">${labelText}</div>
@@ -177,7 +236,6 @@ document.addEventListener("DOMContentLoaded", () => {
     typesList.forEach((item) => {
       const label = typeNames[item.operation] || item.operation;
       const pct = totalOps > 0 ? ((item.count / totalOps) * 100).toFixed(1) : 0;
-
       const row = document.createElement("div");
       row.className = "h-bar-item";
       row.innerHTML = `
@@ -213,7 +271,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const key = p.preset || "ebook";
       const label = presetNames[key] || key;
       const pct = compOps > 0 ? ((p.count / compOps) * 100).toFixed(1) : 0;
-
       const row = document.createElement("div");
       row.className = "h-bar-item";
       row.innerHTML = `
@@ -262,6 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
       TIMEOUT: "Tiempo de espera agotado",
       GS_NOT_INSTALLED: "Ghostscript no disponible",
       GS_EXECUTION_ERROR: "Fallo de ejecución en Ghostscript",
+      WATERMARK_ERROR: "Error en marca de agua",
     };
 
     errorsList.forEach((e) => {

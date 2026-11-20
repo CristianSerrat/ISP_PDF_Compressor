@@ -99,3 +99,68 @@ def get_client_identifier(request: Request, mode: str, trust_proxy: bool, salt: 
     # Modo 'hash' (por defecto)
     combined = f"{salt}:{ip}".encode("utf-8")
     return hashlib.sha256(combined).hexdigest()[:16]
+
+
+# ==========================================
+# GESTIÓN DE SESIONES Y RATE LIMITING ADMIN
+# ==========================================
+import base64
+import hmac
+import time
+import uuid
+
+_login_attempts: dict[str, list[float]] = {}
+
+
+def check_login_rate_limit(ip: str, max_attempts: int = 5, window_seconds: int = 300) -> bool:
+    """Verifica si la IP ha superado el número máximo de intentos fallidos en la ventana de tiempo."""
+    now = time.time()
+    attempts = _login_attempts.get(ip, [])
+    # Filtrar solo los intentos dentro de la ventana de tiempo
+    recent = [t for t in attempts if now - t < window_seconds]
+    _login_attempts[ip] = recent
+    return len(recent) < max_attempts
+
+
+def record_failed_login(ip: str) -> None:
+    """Registra un intento de login fallido para la IP."""
+    now = time.time()
+    if ip not in _login_attempts:
+        _login_attempts[ip] = []
+    _login_attempts[ip].append(now)
+
+
+def clear_failed_logins(ip: str) -> None:
+    """Limpia los intentos fallidos tras un inicio de sesión exitoso."""
+    _login_attempts.pop(ip, None)
+
+
+def create_admin_session_token(secret_key: str, expires_hours: int = 8) -> str:
+    """Crea un token de sesión de administrador firmado criptográficamente con HMAC-SHA256."""
+    exp = int(time.time() + (expires_hours * 3600))
+    nonce = uuid.uuid4().hex[:12]
+    payload = f"{exp}:{nonce}"
+    sig = hmac.new(secret_key.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    raw = f"{payload}:{sig}"
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("utf-8")
+
+
+def verify_admin_session_token(token: str, secret_key: str) -> bool:
+    """Verifica la firma y vigencia del token de sesión de administrador."""
+    if not token:
+        return False
+    try:
+        raw = base64.urlsafe_b64decode(token.encode("utf-8")).decode("utf-8")
+        parts = raw.split(":")
+        if len(parts) != 3:
+            return False
+        exp_str, nonce, sig = parts
+        exp = int(exp_str)
+        if time.time() > exp:
+            return False  # Token expirado
+
+        payload = f"{exp_str}:{nonce}"
+        expected_sig = hmac.new(secret_key.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(sig, expected_sig)
+    except Exception:
+        return False

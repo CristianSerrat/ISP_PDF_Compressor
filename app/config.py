@@ -35,9 +35,21 @@ class Settings(BaseSettings):
     HASH_SALT: str = Field(default="pdf-secret-salt-2024", description="Sal para hashear IPs")
 
     # Seguridad / Control de Acceso
+    ADMIN_PASSWORD: str = Field(
+        default="admin1234",
+        description="Clave maestra de acceso al panel /admin"
+    )
+    ADMIN_SESSION_HOURS: int = Field(
+        default=8,
+        description="Duración en horas de la sesión de administrador"
+    )
+    SECRET_KEY: str = Field(
+        default="pdf-tools-session-secret-key-2024",
+        description="Clave para firma criptográfica de cookies de sesión"
+    )
     ADMIN_ALLOWED_NETWORKS: str = Field(
-        default="127.0.0.1/32,::1/128",
-        description="Redes CIDR permitidas para /admin separadas por coma"
+        default="",
+        description="Redes CIDR opcionales para /admin (vacío para permitir cualquier IP con contraseña)"
     )
 
     # Módulos habilitados

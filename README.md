@@ -101,8 +101,11 @@ Todas las variables son opcionales y cuentan con valores por defecto preparados 
 | `HASH_SALT` | `pdf-secret-salt-2024` | Sal utilizada para el hashing de IPs en modo `hash`. |
 | `LOG_RETENTION_DAYS` | `365` | Días de retención para los registros de uso en SQLite. |
 | `LOG_LEVEL` | `INFO` | Nivel de logs técnicos a consola (`DEBUG`, `INFO`, `WARNING`). |
+| `ADMIN_PASSWORD` | `admin1234` | Clave maestra para acceder al panel de administración (`/admin/stats`). |
+| `ADMIN_SESSION_HOURS`| `8` | Duración en horas de la sesión de administrador. |
+| `SECRET_KEY` | `pdf-tools-session-secret-key-2024` | Clave criptográfica para firma HMAC de cookies de sesión. |
 | `TRUST_PROXY` | `false` | Respetar cabecera `X-Forwarded-For` detrás de proxy inverso. |
-| `ADMIN_ALLOWED_NETWORKS`| `127.0.0.1/32,::1/128` | Redes CIDR autorizadas para acceder a `/admin/*`. |
+| `ADMIN_ALLOWED_NETWORKS`| `""` | Redes CIDR opcionales (vacío permite cualquier IP con clave). |
 | `ENABLED_MODULES` | *(todos)* | Módulos activos separados por coma. |
 
 ---
