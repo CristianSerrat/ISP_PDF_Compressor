@@ -54,7 +54,7 @@ class Settings(BaseSettings):
 
     # Módulos habilitados
     ENABLED_MODULES: str = Field(
-        default="compress,watermark,merge,split,rotate,protect,strip_metadata,img2pdf",
+        default="compress,watermark,merge,split,rotate,protect,strip_metadata,img2pdf,edit_metadata",
         description="Lista de módulos activos separados por coma"
     )
 

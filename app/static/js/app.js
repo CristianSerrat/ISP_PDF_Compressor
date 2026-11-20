@@ -621,11 +621,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const extraPanelRotate = document.getElementById("extraPanelRotate");
   const extraPanelProtect = document.getElementById("extraPanelProtect");
   const extraPanelStrip = document.getElementById("extraPanelStrip");
+  const extraPanelEditMeta = document.getElementById("extraPanelEditMeta");
 
   const splitPagesInput = document.getElementById("splitPagesInput");
   const rotateAngleSelect = document.getElementById("rotateAngleSelect");
   const rotatePagesInput = document.getElementById("rotatePagesInput");
   const protectPasswordInput = document.getElementById("protectPasswordInput");
+
+  const metaTitleInput = document.getElementById("metaTitleInput");
+  const metaAuthorInput = document.getElementById("metaAuthorInput");
+  const metaSubjectInput = document.getElementById("metaSubjectInput");
+  const metaKeywordsInput = document.getElementById("metaKeywordsInput");
+  const metaCreatorInput = document.getElementById("metaCreatorInput");
 
   const extraAlertContainer = document.getElementById("extraAlertContainer");
   const extraProgressContainer = document.getElementById("extraProgressContainer");
@@ -674,6 +681,13 @@ document.addEventListener("DOMContentLoaded", () => {
       multiple: false,
       minFiles: 1,
     },
+    edit_meta: {
+      btnLabel: "✏️ Guardar Metadatos",
+      dropText: "Arrastra el PDF cuyos metadatos deseas modificar",
+      accept: ".pdf,application/pdf",
+      multiple: false,
+      minFiles: 1,
+    },
     img2pdf: {
       btnLabel: "🖼️ Convertir a PDF",
       dropText: "Arrastra las imágenes a convertir (PNG, JPG, WebP)",
@@ -704,6 +718,13 @@ document.addEventListener("DOMContentLoaded", () => {
     extraPanelRotate.style.display = toolKey === "rotate" ? "block" : "none";
     extraPanelProtect.style.display = toolKey === "protect" ? "block" : "none";
     extraPanelStrip.style.display = toolKey === "strip" ? "block" : "none";
+    extraPanelEditMeta.style.display = toolKey === "edit_meta" ? "block" : "none";
+
+    metaTitleInput.value = "";
+    metaAuthorInput.value = "";
+    metaSubjectInput.value = "";
+    metaKeywordsInput.value = "";
+    metaCreatorInput.value = "";
 
     // Reiniciar archivos
     extraFiles = [];
@@ -739,6 +760,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     renderExtraFileList();
     checkExtraReady();
+
+    // Si es modificación de metadatos, precargar valores actuales del PDF
+    if (currentExtraTool === "edit_meta" && extraFiles.length > 0) {
+      const readFd = new FormData();
+      readFd.append("file", extraFiles[0]);
+      fetch("/api/extras/read-metadata", { method: "POST", body: readFd })
+        .then((r) => r.json())
+        .then((meta) => {
+          if (meta.title) metaTitleInput.value = meta.title;
+          if (meta.author) metaAuthorInput.value = meta.author;
+          if (meta.subject) metaSubjectInput.value = meta.subject;
+          if (meta.keywords) metaKeywordsInput.value = meta.keywords;
+          if (meta.creator) metaCreatorInput.value = meta.creator;
+        })
+        .catch(() => {});
+    }
   }
 
   function renderExtraFileList() {
@@ -877,6 +914,14 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (currentExtraTool === "strip") {
       endpoint = "/api/extras/strip-metadata";
       fd.append("file", extraFiles[0]);
+    } else if (currentExtraTool === "edit_meta") {
+      endpoint = "/api/extras/edit-metadata";
+      fd.append("file", extraFiles[0]);
+      fd.append("title", metaTitleInput.value);
+      fd.append("author", metaAuthorInput.value);
+      fd.append("subject", metaSubjectInput.value);
+      fd.append("keywords", metaKeywordsInput.value);
+      fd.append("creator", metaCreatorInput.value);
     } else if (currentExtraTool === "img2pdf") {
       endpoint = "/api/extras/img2pdf";
       extraFiles.forEach((f) => fd.append("files", f));

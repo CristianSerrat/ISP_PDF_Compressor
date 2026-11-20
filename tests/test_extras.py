@@ -198,3 +198,54 @@ def test_module_disabled_returns_403(sample_pdf_bytes):
         assert "deshabilitado" in response.json()["detail"]
     finally:
         settings.ENABLED_MODULES = original_modules
+
+
+def test_read_and_modify_metadata(pdf_with_metadata_bytes):
+    """Prueba la lectura y modificación de campos de metadatos de un PDF."""
+    # 1. Probar lectura de metadatos existentes
+    read_resp = client.post(
+        "/api/extras/read-metadata",
+        files={"file": ("orig.pdf", pdf_with_metadata_bytes, "application/pdf")},
+    )
+    assert read_resp.status_code == 200
+    meta_json = read_resp.json()
+    assert meta_json["author"] == "Profesor Juan Pérez"
+    assert meta_json["title"] == "Examen Secreto Trimestral"
+
+    # 2. Modificar los metadatos
+    edit_resp = client.post(
+        "/api/extras/edit-metadata",
+        data={
+            "title": "Nuevo Título Oficial 2024",
+            "author": "Departamento de Ciencias",
+            "subject": "Física y Química",
+            "keywords": "examen, 4eso, ciencias",
+            "creator": "Sistema PDF Interno",
+        },
+        files={"file": ("doc.pdf", pdf_with_metadata_bytes, "application/pdf")},
+    )
+    assert edit_resp.status_code == 200
+    data = edit_resp.json()
+    assert data["token"] is not None
+
+    # 3. Descargar y verificar con pypdf
+    dl_resp = client.get(data["download_url"])
+    assert dl_resp.status_code == 200
+    reader = PdfReader(io.BytesIO(dl_resp.content))
+    assert reader.metadata.title == "Nuevo Título Oficial 2024"
+    assert reader.metadata.author == "Departamento de Ciencias"
+    assert reader.metadata.subject == "Física y Química"
+
+    # 4. Privacidad: Comprobar que los valores sensibles NO se registren en SQLite
+    with usage_repo.get_connection() as conn:
+        rows = conn.execute("SELECT * FROM usage_logs WHERE operation = 'edit_metadata' ORDER BY id DESC LIMIT 1").fetchall()
+        assert len(rows) == 1
+        row = rows[0]
+        assert row["status"] == "ok"
+        for col in row.keys():
+            val = str(row[col])
+            assert "Nuevo Título Oficial" not in val
+            assert "Departamento de Ciencias" not in val
+        params = json.loads(row["params"])
+        assert "title" not in params
+        assert "author" not in params

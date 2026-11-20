@@ -15,7 +15,9 @@ from app.database.usage_repo import usage_repo
 from app.services.pdf_extras import (
     images_to_pdf,
     merge_pdfs,
+    modify_pdf_metadata,
     protect_pdf,
+    read_pdf_metadata,
     rotate_pdf,
     split_pdf,
     strip_metadata_pdf,
@@ -423,3 +425,103 @@ async def api_images_to_pdf(
     finally:
         for p in input_paths:
             storage.remove_file(p)
+
+
+# ==========================================
+# 7. MODIFICAR METADATOS (EDIT METADATA)
+# ==========================================
+@router.post("/read-metadata")
+async def api_read_metadata(
+    file: UploadFile = File(...),
+):
+    """Lee y devuelve los metadatos actuales del PDF para precargar el formulario."""
+    check_module_enabled("edit_metadata")
+    header = await file.read(1024)
+    if not validate_pdf_magic_bytes(header):
+        raise HTTPException(status_code=400, detail="El archivo no es un documento PDF válido.")
+
+    _, input_path = storage.create_temp_path(suffix="_read_meta.pdf")
+    try:
+        with open(input_path, "wb") as f:
+            f.write(header)
+            while chunk := await file.read(65536):
+                f.write(chunk)
+
+        metadata = read_pdf_metadata(input_path)
+        return metadata
+    finally:
+        storage.remove_file(input_path)
+
+
+@router.post("/edit-metadata")
+async def api_edit_metadata(
+    request: Request,
+    file: UploadFile = File(...),
+    title: str = Form(""),
+    author: str = Form(""),
+    subject: str = Form(""),
+    keywords: str = Form(""),
+    creator: str = Form(""),
+):
+    """Modifica los metadatos del PDF conservando el contenido del documento."""
+    check_module_enabled("edit_metadata")
+    client_id = get_client_identifier(request, settings.LOG_CLIENT_MODE, settings.TRUST_PROXY, settings.HASH_SALT)
+
+    header = await file.read(1024)
+    if not validate_pdf_magic_bytes(header):
+        raise HTTPException(status_code=400, detail="El archivo no es un documento PDF válido.")
+
+    _, input_path = storage.create_temp_path(suffix="_edit_meta_in.pdf")
+    with open(input_path, "wb") as f:
+        f.write(header)
+        while chunk := await file.read(65536):
+            f.write(chunk)
+
+    token, output_path = storage.create_temp_path(suffix="_meta_editado.pdf")
+    semaphore = get_concurrency_semaphore()
+
+    fields_to_update = {
+        "title": title.strip(),
+        "author": author.strip(),
+        "subject": subject.strip(),
+        "keywords": keywords.strip(),
+        "creator": creator.strip(),
+    }
+
+    try:
+        async with semaphore:
+            result = await modify_pdf_metadata(input_path, fields_to_update, output_path)
+
+        # Privacidad: NUNCA se registran los valores de título/autor en los logs de uso
+        updated_keys = [k for k, v in fields_to_update.items() if v]
+        await usage_repo.log_operation(
+            operation="edit_metadata",
+            params={"updated_fields": updated_keys},
+            pages=result.pages,
+            original_size=result.original_size,
+            final_size=result.final_size,
+            duration_ms=result.duration_ms,
+            status="ok" if result.success else "error",
+            error_code=result.error_code,
+            client_id=client_id,
+        )
+
+        if not result.success:
+            storage.remove_file(output_path)
+            raise HTTPException(status_code=422, detail=result.error_message or "Error al modificar metadatos.")
+
+        clean_orig = sanitize_filename(file.filename or "doc.pdf")
+        download_name = f"metadatos_{clean_orig}"
+        storage.register_download(token, output_path, download_name)
+
+        return {
+            "token": token,
+            "download_url": f"/api/download/{token}",
+            "filename": download_name,
+            "original_size": result.original_size,
+            "final_size": result.final_size,
+            "pages": result.pages,
+            "duration_ms": result.duration_ms,
+        }
+    finally:
+        storage.remove_file(input_path)

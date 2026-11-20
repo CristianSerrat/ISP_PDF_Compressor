@@ -258,6 +258,7 @@
         <div class="type-btn" data-extra="rotate">🔄 Rotar Páginas</div>
         <div class="type-btn" data-extra="protect">🔒 Proteger PDF</div>
         <div class="type-btn" data-extra="strip">🧹 Limpiar Metadatos</div>
+        <div class="type-btn" data-extra="edit_meta">✏️ Modificar Metadatos</div>
         <div class="type-btn" data-extra="img2pdf">🖼️ Imágenes a PDF</div>
       </div>
 
@@ -313,6 +314,32 @@
         <div id="extraPanelStrip" style="display: none;">
           <div class="alert alert-warning" style="margin-top: 0;">
             ℹ️ Se eliminará el autor, título, software generador, fecha de creación y metadatos XMP del documento para garantizar anonimato total.
+          </div>
+        </div>
+
+        <!-- Panel Modificar Metadatos -->
+        <div id="extraPanelEditMeta" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.2rem;">Título:</label>
+              <input type="text" id="metaTitleInput" class="input-text" placeholder="Título del documento">
+            </div>
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.2rem;">Autor:</label>
+              <input type="text" id="metaAuthorInput" class="input-text" placeholder="Autor o institución">
+            </div>
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.2rem;">Asunto / Tema:</label>
+              <input type="text" id="metaSubjectInput" class="input-text" placeholder="Descripción breve">
+            </div>
+            <div>
+              <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.2rem;">Palabras clave:</label>
+              <input type="text" id="metaKeywordsInput" class="input-text" placeholder="Separadas por comas">
+            </div>
+          </div>
+          <div style="margin-top: 0.5rem;">
+            <label style="font-size: 0.85rem; font-weight: 500; display: block; margin-bottom: 0.2rem;">Software Creador / Aplicación:</label>
+            <input type="text" id="metaCreatorInput" class="input-text" placeholder="Aplicación generadora">
           </div>
         </div>
 

@@ -407,3 +407,100 @@ async def images_to_pdf(image_paths: list[Path], output_path: Path) -> ExtraResu
             error_code="IMG2PDF_ERROR",
             error_message=f"Error al convertir imágenes a PDF: {str(ex)}",
         )
+
+
+# ==========================================
+# 7. MODIFICAR METADATOS (EDIT METADATA)
+# ==========================================
+def read_pdf_metadata(input_path: Path) -> dict[str, str]:
+    """Lee y devuelve los metadatos actuales del documento PDF."""
+    reader = pypdf.PdfReader(str(input_path))
+    if reader.is_encrypted:
+        try:
+            res = reader.decrypt("")
+            if res == 0:
+                raise ValueError("ENCRYPTED_PDF")
+        except Exception:
+            raise ValueError("ENCRYPTED_PDF")
+
+    meta = reader.metadata or {}
+    return {
+        "title": str(meta.get("/Title", "") or ""),
+        "author": str(meta.get("/Author", "") or ""),
+        "subject": str(meta.get("/Subject", "") or ""),
+        "keywords": str(meta.get("/Keywords", "") or ""),
+        "creator": str(meta.get("/Creator", "") or ""),
+    }
+
+
+def _modify_pdf_metadata_sync(
+    input_path: Path,
+    metadata_fields: dict[str, str],
+    output_path: Path,
+) -> int:
+    """Modifica los campos de metadatos conservando páginas y estructura."""
+    reader = pypdf.PdfReader(str(input_path))
+    writer = pypdf.PdfWriter(clone_from=reader)
+
+    meta_dict = {}
+    if "title" in metadata_fields:
+        meta_dict["/Title"] = metadata_fields["title"]
+    if "author" in metadata_fields:
+        meta_dict["/Author"] = metadata_fields["author"]
+    if "subject" in metadata_fields:
+        meta_dict["/Subject"] = metadata_fields["subject"]
+    if "keywords" in metadata_fields:
+        meta_dict["/Keywords"] = metadata_fields["keywords"]
+    if "creator" in metadata_fields:
+        meta_dict["/Creator"] = metadata_fields["creator"]
+
+    writer.add_metadata(meta_dict)
+
+    with open(output_path, "wb") as f_out:
+        writer.write(f_out)
+
+    return len(reader.pages)
+
+
+async def modify_pdf_metadata(
+    input_path: Path,
+    metadata_fields: dict[str, str],
+    output_path: Path,
+) -> ExtraResult:
+    start_time = time.perf_counter()
+    orig_size = input_path.stat().st_size
+    try:
+        pages = inspect_pdf_pages(input_path)
+        await asyncio.to_thread(_modify_pdf_metadata_sync, input_path, metadata_fields, output_path)
+        duration_ms = int((time.perf_counter() - start_time) * 1000)
+        final_size = output_path.stat().st_size if output_path.exists() else 0
+        return ExtraResult(
+            success=True,
+            original_size=orig_size,
+            final_size=final_size,
+            pages=pages,
+            duration_ms=duration_ms,
+            output_path=output_path,
+        )
+    except ValueError as ve:
+        duration_ms = int((time.perf_counter() - start_time) * 1000)
+        return ExtraResult(
+            success=False,
+            original_size=orig_size,
+            final_size=0,
+            pages=0,
+            duration_ms=duration_ms,
+            error_code=str(ve),
+            error_message="El PDF está protegido con contraseña o es inválido.",
+        )
+    except Exception as ex:
+        duration_ms = int((time.perf_counter() - start_time) * 1000)
+        return ExtraResult(
+            success=False,
+            original_size=orig_size,
+            final_size=0,
+            pages=0,
+            duration_ms=duration_ms,
+            error_code="METADATA_ERROR",
+            error_message=f"Error al modificar metadatos: {str(ex)}",
+        )

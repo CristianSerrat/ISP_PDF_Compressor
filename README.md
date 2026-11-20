@@ -29,6 +29,7 @@ Aplicación web interna, 100% local y auto-contenida para procesar y optimizar d
   - 🔄 **Rotar Páginas (Rotate):** gira todas las páginas o rangos en 90°, 180° o 270°.
   - 🔒 **Proteger con Contraseña (Protect):** cifra el PDF para exigir contraseña de apertura (la contraseña se procesa en memoria y **NUNCA** se almacena en base de datos ni logs).
   - 🧹 **Eliminar Metadatos (Strip Metadata):** anonimiza por completo el PDF suprimiendo autor, título, software generador, fechas y metadatos XMP.
+  - 📝 **Modificar Metadatos (Edit Metadata):** lee los metadatos existentes de un PDF (título, autor, asunto, palabras clave, creador, productor) y permite modificarlos de forma visual o asignar nuevos valores.
   - 🖼️ **Imágenes a PDF (Img2pdf):** convierte imágenes PNG, JPG o WebP a un PDF unificado.
   - *Cada módulo se puede activar o desactivar individualmente mediante la variable `ENABLED_MODULES`.*
 - **Procesamiento individual y por lotes:** arrastrar y soltar múltiples archivos con descarga individual o en paquete ZIP unificado.
@@ -44,7 +45,7 @@ Aplicación web interna, 100% local y auto-contenida para procesar y optimizar d
 - **Panel de Control y Estadísticas (`/admin/stats`):**
   - Métricas agregadas por período (7, 30, 90 y 365 días): operaciones por día, por tipo, por preset de compresión, picos de uso por franja horaria (00-23h), clientes más activos y códigos de error.
   - Exportación completa del registro a archivo CSV descargable y filtrable por fechas (`/admin/export.csv`).
-  - **Control de acceso sin credenciales:** restringido exclusivamente a las redes e IPs configuradas en `ADMIN_ALLOWED_NETWORKS` (por defecto solo `127.0.0.1/32` y `::1/128`), denegando con 403 Forbidden al resto.
+  - **Acceso protegido con clave maestra:** autenticación basada en contraseña (`ADMIN_PASSWORD`, por defecto `admin1234`), cookies seguras de sesión firmadas mediante HMAC-SHA256 y protección contra fuerza bruta con rate-limiting. Restricción opcional por subredes CIDR si se configura `ADMIN_ALLOWED_NETWORKS`. Incluye botón de cierre de sesión.
 - **Interfaz 100% offline:** HTML5, CSS y JavaScript vanilla sin fuentes externas ni CDNs.
 
 ---
