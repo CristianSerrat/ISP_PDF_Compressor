@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Estadísticas - Herramientas PDF</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .admin-container {
+      max-width: 1100px;
+      margin: 1.5rem auto;
+      padding: 0 1.5rem;
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .period-filters {
+      display: flex;
+      gap: 0.5rem;
+      background: #e2e8f0;
+      padding: 0.25rem;
+      border-radius: var(--radius-md);
+    }
+    .period-btn {
+      border: none;
+      background: none;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+    }
+    .period-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .metric-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+    .metric-title {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+    }
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    .metric-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.3rem;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    @media (max-width: 600px) {
+      .charts-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .chart-card {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    .chart-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .bar-chart-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.5rem;
+      height: 180px;
+      padding-top: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar-fill {
+      width: 100%;
+      max-width: 36px;
+      background: var(--primary);
+      border-radius: 4px 4px 0 0;
+      transition: height 0.4s ease;
+      min-height: 2px;
+      position: relative;
+    }
+    .bar-fill:hover {
+      background: var(--primary-hover);
+    }
+    .bar-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .horizontal-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .h-bar-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .h-bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .h-bar-track {
+      background: #f1f5f9;
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .h-bar-fill {
+      background: var(--primary);
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.4s ease;
+    }
+    .table-container {
+      overflow-x: auto;
+    }
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    table.data-table th, table.data-table td {
+      padding: 0.6rem 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    table.data-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .export-box {
+      background: white;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .export-inputs {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .export-inputs label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .export-inputs input[type="date"] {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--primary);">
+        <line x1="18" y1="20" x2="18" y2="10"></line>
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <line x1="6" y1="20" x2="6" y2="14"></line>
+      </svg>
+      <h1>Panel de Estadísticas y Uso</h1>
+      <span class="badge-local">Acceso Administrador</span>
+    </div>
+    <div class="header-links">
+      <a href="/">← Volver a la Aplicación</a>
+    </div>
+  </header>
+
+  <main class="admin-container">
+    <!-- Encabezado de control con filtros -->
+    <div class="admin-header">
+      <div>
+        <h2 style="font-size: 1.25rem; font-weight: 700;">Métricas de Procesamiento</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Uso de la herramienta sin registrar nombres ni contenido de archivos.</p>
+      </div>
+      <div class="period-filters">
+        <button class="period-btn" data-days="7">7 días</button>
+        <button class="period-btn active" data-days="30">30 días</button>
+        <button class="period-btn" data-days="90">90 días</button>
+        <button class="period-btn" data-days="365">1 año</button>
+      </div>
+    </div>
+
+    <!-- Tarjetas de Métricas Globales -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-title">Operaciones Totales</div>
+        <div class="metric-value" id="valTotalOps">-</div>
+        <div class="metric-sub" id="valOkOps">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Tasa de Error</div>
+        <div class="metric-value" id="valErrorRate">-</div>
+        <div class="metric-sub" id="valErrorOps">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Ahorro de Espacio</div>
+        <div class="metric-value" id="valSavedPct">-</div>
+        <div class="metric-sub" id="valSavedBytes">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Espacio Procesado</div>
+        <div class="metric-value" id="valOriginalBytes">-</div>
+        <div class="metric-sub" id="valFinalBytes">-</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Páginas Totales</div>
+        <div class="metric-value" id="valTotalPages">-</div>
+        <div class="metric-sub">Páginas procesadas</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-title">Tiempo Medio</div>
+        <div class="metric-value" id="valAvgDuration">-</div>
+        <div class="metric-sub">Por operación</div>
+      </div>
+    </div>
+
+    <!-- Cuadrícula de Gráficos y Desgloses -->
+    <div class="charts-grid">
+      <!-- Operaciones por Día -->
+      <div class="chart-card">
+        <div class="chart-title">Operaciones por Día</div>
+        <div class="bar-chart-container" id="chartDays">
+          <div style="margin: auto; color: var(--text-muted); font-size: 0.85rem;">Cargando datos...</div>
+        </div>
+      </div>
+
+      <!-- Picos por Franja Horaria -->
+      <div class="chart-card">
+        <div class="chart-title">Picos de Uso por Franja Horaria (00h - 23h UTC)</div>
+        <div class="bar-chart-container" id="chartHours">
+          <div style="margin: auto; color: var(--text-muted); font-size: 0.85rem;">Cargando datos...</div>
+        </div>
+      </div>
+
+      <!-- Operaciones por Tipo -->
+      <div class="chart-card">
+        <div class="chart-title">Operaciones por Tipo</div>
+        <div class="horizontal-bars" id="chartTypes">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Cargando datos...</div>
+        </div>
+      </div>
+
+      <!-- Desglose de Presets de Compresión -->
+      <div class="chart-card">
+        <div class="chart-title">Calidad de Compresión Elegida</div>
+        <div class="horizontal-bars" id="chartPresets">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">Cargando datos...</div>
+        </div>
+      </div>
+
+      <!-- Clientes Más Activos -->
+      <div class="chart-card">
+        <div class="chart-title">Clientes Más Activos (Identificador Anónimo)</div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID Cliente / Hash</th>
+                <th>Operaciones</th>
+                <th>Exitosas</th>
+              </tr>
+            </thead>
+            <tbody id="tableClients">
+              <tr><td colspan="3" style="text-align:center;">Cargando datos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Errores Más Frecuentes -->
+      <div class="chart-card">
+        <div class="chart-title">Códigos de Error Comunes</div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Código de Error</th>
+                <th>Frecuencia</th>
+              </tr>
+            </thead>
+            <tbody id="tableErrors">
+              <tr><td colspan="2" style="text-align:center;">Cargando datos...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sección de Exportación a CSV -->
+    <div class="export-box">
+      <div>
+        <h3 style="font-size: 1rem; font-weight: 700;">Exportar Registro Completo</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Descarga el log de uso en CSV filtrable por rango de fechas.</p>
+      </div>
+      <div class="export-inputs">
+        <label>
+          Desde:
+          <input type="date" id="exportStart">
+        </label>
+        <label>
+          Hasta:
+          <input type="date" id="exportEnd">
+        </label>
+        <button class="btn btn-primary" id="btnExportCsv" style="padding: 0.5rem 1rem; font-size: 0.85rem;">
+          📥 Descargar CSV
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Panel de administración interno. Los registros de uso son anónimos y se purgan según la política de retención configurada.
+  </footer>
+
+  <script src="/static/js/admin.js"></script>
+</body>
+</html>
