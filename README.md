@@ -69,7 +69,37 @@ Aplicación web interna, 100% local y auto-contenida para procesar y optimizar d
 
 ---
 
-## Instalación y Puesta en Marcha
+## Despliegue con Docker y CasaOS (Ubuntu Server)
+
+La aplicación cuenta con configuración nativa para **CasaOS** en servidores Ubuntu, permitiendo monitorizar consumo de CPU/RAM, arrancar, detener y reiniciar el servicio con un solo clic desde el panel de control web.
+
+### Opción A: Despliegue directo mediante la interfaz web de CasaOS
+1. En la pantalla principal de CasaOS, haz clic en el icono **"+"** (arriba a la derecha del panel de aplicaciones) y selecciona **"Instalar una aplicación personalizada"** (*Install a customized app*).
+2. Haz clic en el botón superior derecho **"Importar"** (*Import*).
+3. Pega el contenido íntegro del archivo [`docker-compose.yml`](file:///Users/cristian/Desktop/Copia%20Drive_24/Workspace/PDF_Compressor/docker-compose.yml) y pulsa **"Submit"**.
+4. CasaOS rellenará automáticamente el icono, nombre ("Herramientas PDF"), puerto web (`8080`), volúmenes persistentes (`./data` y `./tmp`) y variables de entorno.
+5. Haz clic en **"Instalar"** (*Install*). CasaOS levantará el contenedor y creará el acceso directo en el panel de control.
+
+### Opción B: Despliegue mediante consola / SSH en el servidor Ubuntu
+1. Conéctate a tu servidor Ubuntu por SSH:
+   ```bash
+   ssh usuario@ip-del-servidor
+   ```
+2. Clona el repositorio oficial:
+   ```bash
+   git clone https://github.com/CristianSerrat/ISP_PDF_Compressor.git pdf-tools
+   cd pdf-tools
+   ```
+3. Construye la imagen y levanta el servicio con Docker Compose:
+   ```bash
+   docker compose up -d --build
+   ```
+4. Al estar configuradas las etiquetas `x-casaos`, la aplicación aparecerá automáticamente en el panel de CasaOS para su monitorización en tiempo real.
+5. Accede a la aplicación en: `http://<IP_DE_TU_SERVIDOR>:8080`.
+
+---
+
+## Instalación y Puesta en Marcha en Desarrollo Local
 
 1. **Crear y activar el entorno virtual:**
    ```bash

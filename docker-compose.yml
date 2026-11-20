@@ -1,0 +1,98 @@
+# Docker Compose para Herramientas PDF
+# Compatible al 100% con CasaOS (Ubuntu 24.04/26.04) y Docker Compose v2
+
+name: pdf-tools
+
+services:
+  pdf-tools:
+    image: pdf-tools:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: pdf-tools
+    restart: unless-stopped
+    ports:
+      - "8080:8000"
+    volumes:
+      - ./data:/app/data
+      - ./tmp:/app/tmp
+    environment:
+      - PORT=8000
+      - DATA_DIR=/app/data
+      - TMP_DIR=/app/tmp
+      - ADMIN_PASSWORD=admin1234
+      - ADMIN_SESSION_HOURS=8
+      - SECRET_KEY=pdf-tools-session-secret-key-2024
+      - LOG_CLIENT_MODE=hash
+      - HASH_SALT=pdf-secret-salt-2024
+      - LOG_RETENTION_DAYS=365
+      - MAX_FILE_MB=100
+      - MAX_FILES=20
+      - MAX_CONCURRENT_JOBS=2
+      - GS_TIMEOUT=120
+      - TTL_MINUTES=30
+      - TRUST_PROXY=true
+      - ADMIN_ALLOWED_NETWORKS=
+      - ENABLED_MODULES=merge,split,rotate,protect,strip_metadata,edit_metadata,img2pdf
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    x-casaos:
+      envs:
+        - container: ADMIN_PASSWORD
+          description:
+            en_us: Master password for /admin/stats panel
+            es_es: Clave maestra para acceder al panel /admin/stats
+        - container: MAX_FILE_MB
+          description:
+            en_us: Maximum PDF file size in MB
+            es_es: Tamaño máximo permitido por archivo en MB
+        - container: MAX_CONCURRENT_JOBS
+          description:
+            en_us: Max concurrent Ghostscript compression jobs
+            es_es: Máximo de compresiones Ghostscript simultáneas
+        - container: LOG_CLIENT_MODE
+          description:
+            en_us: Client identifier mode in SQLite (hash, none, ip)
+            es_es: Modo de registro de cliente en SQLite (hash, none, ip)
+      ports:
+        - container: "8000"
+          description:
+            en_us: Web UI port
+            es_es: Puerto de la interfaz web
+      volumes:
+        - container: /app/data
+          description:
+            en_us: Persistent storage for anonymous usage database
+            es_es: Almacenamiento persistente de la base de datos de uso
+        - container: /app/tmp
+          description:
+            en_us: Temporary folder for PDF processing
+            es_es: Carpeta temporal para procesamiento de PDFs
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+    - arm
+  main: pdf-tools
+  description:
+    en_us: 100% local, private, and secure PDF tools suite for your network. Compress PDFs, stamp watermarks, merge, split, rotate, protect, strip/edit metadata, and convert images to PDF without sending any data outside.
+    es_es: Suite de herramientas PDF 100% local, privada y segura para la red del colegio. Comprime PDFs, estampa marcas de agua, une, divide, rota, cifra con contraseña, anonimiza o modifica metadatos y convierte imágenes a PDF sin telemetría ni servidores externos.
+  tagline:
+    en_us: Private local alternative to iLovePDF without telemetry or external calls
+    es_es: Alternativa local y privada a iLovePDF sin telemetría ni servidores externos
+  developer: Centro Educativo
+  author: Cristian
+  icon: https://raw.githubusercontent.com/walkxcode/dashboard-icons/main/png/pdf.png
+  thumbnail: ""
+  title:
+    en_us: Herramientas PDF
+    es_es: Herramientas PDF
+  category: Utilities
+  port_map: "8080"
+  scheme: http
+  index: /

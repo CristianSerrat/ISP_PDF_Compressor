@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.py[cod]
+*$py.class
+.pytest_cache
+tests
+data/*
+!data/.gitkeep
+tmp/*
+!tmp/.gitkeep
+ejemplos
+.DS_Store
+*.log
